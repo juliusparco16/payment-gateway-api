@@ -17,6 +17,7 @@ Amounts use the currency's minor unit: `2599` means CAD 25.99. This milestone si
 ## Run locally
 
 Requirements: Java 17 and Docker with Docker Compose.
+Docker exposes PostgreSQL on localhost:5433 to avoid conflicts with a locally installed PostgreSQL server on port 5432. PostgreSQL inside the container still uses port 5432.
 
 ```bash
 docker compose up -d
@@ -60,7 +61,7 @@ Docker must be running because the integration test starts a disposable PostgreS
 
 | Environment variable | Development default |
 |---|---|
-| `DB_URL` | `jdbc:postgresql://localhost:5432/payment_gateway` |
+| `DB_URL` | `jdbc:postgresql://localhost:5433/payment_gateway` |
 | `DB_USERNAME` | `payment_gateway` |
 | `DB_PASSWORD` | `payment_gateway` |
 | `DEMO_CLIENT_ID` | `demo-client` |

@@ -72,3 +72,8 @@ Docker must be running because the integration test starts a disposable PostgreS
 ## Scope intentionally deferred
 
 Kafka/outbox publishing, Redis idempotency keys, refunds, real payment-provider integration, and production identity management belong in later milestones.
+
+
+## Documentation
+
+- [Version 1 Business Requirements](docs/requirements/v1-business-requirements.md) — Proposed scope, acceptance criteria, verified progress, and remaining release checks.

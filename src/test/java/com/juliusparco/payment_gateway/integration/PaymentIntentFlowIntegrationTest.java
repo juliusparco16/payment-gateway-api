@@ -36,9 +36,7 @@ class PaymentIntentFlowIntegrationTest {
 
 	@Container
 	static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine")
-			.withDatabaseName("payment_gateway")
-			.withUsername("payment_gateway")
-			.withPassword("payment_gateway");
+			.withDatabaseName("payment_gateway").withUsername("payment_gateway").withPassword("payment_gateway");
 
 	@DynamicPropertySource
 	static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -65,80 +63,69 @@ class PaymentIntentFlowIntegrationTest {
 	void createsRetrievesAndConfirmsPaymentIntent() throws Exception {
 		String token = obtainDemoToken();
 
-		String createResponse = mockMvc.perform(post("/api/payment-intents")
-						.header(HttpHeaders.AUTHORIZATION, bearer(token))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
+		String createResponse = mockMvc
+				.perform(post("/api/payment-intents").header(HttpHeaders.AUTHORIZATION, bearer(token))
+						.contentType(MediaType.APPLICATION_JSON).content("""
 								{"amount":2599,"currency":"CAD","description":"Order 1001"}
 								"""))
-				.andExpect(status().isCreated())
-				.andExpect(header().exists(HttpHeaders.LOCATION))
-				.andExpect(jsonPath("$.amount").value(2599))
-				.andExpect(jsonPath("$.currency").value("CAD"))
-				.andExpect(jsonPath("$.status").value("REQUIRES_CONFIRMATION"))
-				.andReturn().getResponse().getContentAsString();
+				.andExpect(status().isCreated()).andExpect(header().exists(HttpHeaders.LOCATION))
+				.andExpect(jsonPath("$.amount").value(2599)).andExpect(jsonPath("$.currency").value("CAD"))
+				.andExpect(jsonPath("$.status").value("REQUIRES_CONFIRMATION")).andReturn().getResponse()
+				.getContentAsString();
 
 		String id = extract(ID_PATTERN, createResponse);
 
-		mockMvc.perform(get("/api/payment-intents/{id}", id)
-						.header(HttpHeaders.AUTHORIZATION, bearer(token)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(id))
+		mockMvc.perform(get("/api/payment-intents/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id))
 				.andExpect(jsonPath("$.status").value("REQUIRES_CONFIRMATION"));
 
-		mockMvc.perform(post("/api/payment-intents/{id}/confirm", id)
-						.header(HttpHeaders.AUTHORIZATION, bearer(token)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("SUCCEEDED"));
+		mockMvc.perform(post("/api/payment-intents/{id}/confirm", id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUCCEEDED"));
 
-		mockMvc.perform(post("/api/payment-intents/{id}/confirm", id)
-						.header(HttpHeaders.AUTHORIZATION, bearer(token)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("SUCCEEDED"));
+		mockMvc.perform(post("/api/payment-intents/{id}/confirm", id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUCCEEDED"));
 	}
 
 	@Test
 	void rejectsUnauthenticatedAndInvalidRequests() throws Exception {
-		mockMvc.perform(post("/api/payment-intents")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"amount\":2599,\"currency\":\"CAD\"}"))
-				.andExpect(status().isUnauthorized());
+		mockMvc.perform(post("/api/payment-intents").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"amount\":2599,\"currency\":\"CAD\"}")).andExpect(status().isUnauthorized());
 
 		String token = obtainDemoToken();
-		mockMvc.perform(post("/api/payment-intents")
-						.header(HttpHeaders.AUTHORIZATION, bearer(token))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"amount\":0,\"currency\":\"cad\"}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.fieldErrors.amount").exists())
+		mockMvc.perform(post("/api/payment-intents").header(HttpHeaders.AUTHORIZATION, bearer(token))
+				.contentType(MediaType.APPLICATION_JSON).content("{\"amount\":0,\"currency\":\"cad\"}"))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.amount").exists())
 				.andExpect(jsonPath("$.fieldErrors.currency").exists());
 	}
 
 	@Test
 	void doesNotExposeAnotherClientsPaymentIntent() throws Exception {
 		String ownerToken = obtainDemoToken();
-		String createResponse = mockMvc.perform(post("/api/payment-intents")
-						.header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"amount\":1000,\"currency\":\"CAD\"}"))
-				.andExpect(status().isCreated())
-				.andReturn().getResponse().getContentAsString();
+		String createResponse = mockMvc
+				.perform(post("/api/payment-intents").header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
+						.contentType(MediaType.APPLICATION_JSON).content("{\"amount\":1000,\"currency\":\"CAD\"}"))
+				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 		String id = extract(ID_PATTERN, createResponse);
 		String otherToken = jwtService.issueToken("other-client").accessToken();
 
-		mockMvc.perform(get("/api/payment-intents/{id}", id)
-						.header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
+		mockMvc.perform(get("/api/payment-intents/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
 				.andExpect(status().isNotFound());
 	}
 
 	private String obtainDemoToken() throws Exception {
-		String response = mockMvc.perform(post("/api/auth/token")
-						.contentType(MediaType.APPLICATION_JSON)
+		String response = mockMvc
+				.perform(post("/api/auth/token").contentType(MediaType.APPLICATION_JSON)
 						.content("{\"clientId\":\"demo-client\",\"clientSecret\":\"change-me\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.tokenType").value("Bearer"))
-				.andReturn().getResponse().getContentAsString();
+				.andExpect(status().isOk()).andExpect(jsonPath("$.tokenType").value("Bearer")).andReturn().getResponse()
+				.getContentAsString();
 		return extract(TOKEN_PATTERN, response);
+	}
+
+	@Test
+	void rejectsIncorrectClientSecret() throws Exception {
+		mockMvc.perform(post("/api/auth/token").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"clientId\":\"demo-client\",\"clientSecret\":\"wrong-secret\"}"))
+				.andExpect(status().isUnauthorized()).andExpect(jsonPath("$.accessToken").doesNotExist());
 	}
 
 	private String extract(Pattern pattern, String json) {

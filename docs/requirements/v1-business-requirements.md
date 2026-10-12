@@ -79,7 +79,7 @@ These criteria define the V1 target. The evidence column distinguishes demonstra
 
 | ID | Requirement and acceptance criterion | Evidence at 11 October |
 | --- | --- | --- |
-| FR01 | Valid demo credentials return a bearer token with a limited lifetime. Incorrect credentials return 401. | Valid login passed manually and in tests. Incorrect-credential test pending. |
+| FR01 | Valid demo credentials return a bearer token with a limited lifetime. Incorrect credentials return 401. | Valid login passed manually and in tests. Incorrect client secret returned 401 with no access token in an automated test. Incorrect client ID is not yet explicitly tested. |
 | FR02 | Protected payment endpoints reject missing, malformed, expired or incorrectly signed tokens with 401 and do not change payment data. | Missing-token creation test passed. Other negative token tests pending. |
 | FR03 | A valid create request returns 201, a Location header and a unique payment in REQUIRES_CONFIRMATION. | Automated creation checks and manual CAD 25.00 creation passed. |
 | FR04 | The owner can retrieve a payment by ID with 200 and the saved amount, currency, status and timestamps. | Automated and manual retrieval passed. |
@@ -115,7 +115,7 @@ For missing IDs, the intended response is 404. Broader malformed JSON, invalid U
 
 ### Current limitations and decisions
 
-Six passing tests provide a useful foundation but do not prove production security, concurrency safety or failure recovery. The generated Spring Security password warning and Testcontainers deprecation notice remain review items, not confirmed defects.
+Seven passing tests provide a useful foundation but do not prove production security, concurrency safety or failure recovery. The generated Spring Security password warning and Testcontainers deprecation notice remain review items, not confirmed defects.
 
 Use host port 5433 for Docker PostgreSQL because an existing Windows PostgreSQL service occupies 5432. The container still uses 5432 internally. DB_URL remains an override for other environments. This choice was verified by successful startup without the override.
 
@@ -131,7 +131,7 @@ Working branch: feature/payment-intent-flow
 Latest pushed commit: 6930783 — fix: avoid local PostgreSQL port conflict  
 Local checkout: C:\Java\payment-gateway-api
 
-On 11 October 2026, Maven clean verify completed successfully with 3 service unit tests and 3 integration tests, zero failures, errors or skips. Integration tests use MockMvc with a real temporary PostgreSQL container; they do not start a real HTTP server. Manual PowerShell requests exercised the running HTTP API on port 8080.
+On 11 October 2026, Maven clean verify completed successfully with 3 service unit tests and 4 integration tests, zero failures, errors or skips. Integration tests use MockMvc with a real temporary PostgreSQL container; they do not start a real HTTP server. Manual PowerShell requests exercised the running HTTP API on port 8080.
 
 Manual evidence: a CAD 25.00 intent moved from REQUIRES_CONFIRMATION to SUCCEEDED, repeated confirmation preserved that state, and a fresh retrieval returned it. Startup after removing DB_URL connected to port 5433 and validated the existing schema. The subsequent GitHub screenshot showed all checks passed and PR 1 remained open.
 
